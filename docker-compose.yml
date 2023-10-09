@@ -1,7 +1,7 @@
 version: '3'
 services:
         web:
-                image: tanays_group_backend # Change the image name to something unique to your project, aka my_unique_name_v1
+                image: flask_backend # Change the image name to something unique to your project, aka my_unique_name_v1
                 build: .
                 ports:
                         - "8282:8080" # Edit the number on the left to match the port you selected
