@@ -14,4 +14,4 @@ ENV GUNICORN_CMD_ARGS="--workers=3 --bind=0.0.0.0:8080"
 
 EXPOSE 8080
 
-CMD [ "gunicorn", "main:app" ]
+CMD [ "gunicorn", "main:app" ] 
