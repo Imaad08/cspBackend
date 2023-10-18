@@ -1,43 +1,46 @@
-import json
-from flask import Blueprint, request, jsonify
-from flask_restful import Api, Resource
-from pandas_datareader import data as pdr
+from flask import Blueprint, jsonify
+import pandas as pd
+import yfinance as yf
 import plotly.graph_objs as go
+from datetime import datetime
+from flask_restful import Api, Resource
+import numpy as np
 
-api_blueprint = Blueprint('api', __name__)
-api = Api(api_blueprint)
-
-class StockData(Resource):
-    def get(self):
-        stock_tickers = request.args.get('stock_tickers').split(',')
-
-        stock_data = []
-        for ticker in stock_tickers:
-            df = pdr.DataReader(ticker, 'yahoo', period="1y")
-            stock_data.append({
-                'ticker': ticker,
-                'data': df.to_dict(orient='records')
-            })
-
-        plot_data = []
-        for stock in stock_data:
-            trace = go.Scatter(x=[d['Date'] for d in stock['data']],
-                               y=[d['Close'] for d in stock['data']],
-                               mode='lines',
-                               name=stock['ticker'])
-            plot_data.append(trace)
-
-        graph = json.dumps(plot_data, cls=plotly.utils.PlotlyJSONEncoder)
-
-        table_data = []
-        for stock in stock_data:
-            table_data.append({
-                'Ticker': stock['ticker'],
-                'Data': stock['data']
-            })
-
-        return jsonify({'graph': graph, 'table': table_data})
+stock_api = Blueprint('stock_api', __name__, url_prefix='/api/stocks')
+api = Api(stock_api)
 
 
-api.add_resource(StockData, '/stock_data')
+def get_stock_graph(stock_name):
+    end_date = datetime.now()
+    start_date = end_date - pd.Timedelta(days=365)
 
+    df = yf.download(stock_name, start=start_date, end=end_date)
+
+    graph = go.Figure(data=go.Candlestick(x=df.index,
+                                          open=df['Open'],
+                                          high=df['High'],
+                                          low=df['Low'],
+                                          close=df['Close'],
+                                          name=stock_name))
+    graph.update_layout(title=f'{stock_name} Stock Price',
+                        xaxis_title='Date',
+                        yaxis_title='Price')
+
+    graph_data = graph.to_dict()
+    graph_data['data'][0]['x'] = graph_data['data'][0]['x'].astype(
+        str).tolist()
+    graph_data['data'][0]['open'] = graph_data['data'][0]['open'].tolist()
+    graph_data['data'][0]['high'] = graph_data['data'][0]['high'].tolist()
+    graph_data['data'][0]['low'] = graph_data['data'][0]['low'].tolist()
+    graph_data['data'][0]['close'] = graph_data['data'][0]['close'].tolist()
+
+    return graph_data
+
+
+class _ReadStockGraph(Resource):
+    def get(self, stock_name):
+        graph = get_stock_graph(stock_name)
+        return graph
+
+
+api.add_resource(_ReadStockGraph, '/stock_graph/<string:stock_name>')
