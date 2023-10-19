@@ -12,7 +12,7 @@ api = Api(stock_api)
 
 def get_stock_graph(stock_name):
     end_date = datetime.now()
-    start_date = end_date - pd.Timedelta(days=365)
+    start_date = end_date - pd.Timedelta(days=4856)
 
     df = yf.download(stock_name, start=start_date, end=end_date)
 
