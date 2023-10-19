@@ -6,13 +6,10 @@ from datetime import datetime
 
 def get_stock_graph(stock_name):
     end_date = datetime.now()
-    # Fetch data for the last year
     start_date = end_date - pd.Timedelta(days=365)
 
-    # Fetch stock data using pandas_datareader
     df = web.DataReader(stock_name, 'yahoo', start_date, end_date)
 
-    # Create a Plotly figure using fetched stock data
     graph = go.Figure(data=go.Candlestick(x=df.index,
                                           open=df['Open'],
                                           high=df['High'],
