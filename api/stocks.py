@@ -33,7 +33,7 @@ def get_stock_graph(stock_name):
     graph_data['data'][0]['high'] = graph_data['data'][0]['high'].tolist()
     graph_data['data'][0]['low'] = graph_data['data'][0]['low'].tolist()
     graph_data['data'][0]['close'] = graph_data['data'][0]['close'].tolist()
-    
+
     return graph_data
 
 
@@ -44,48 +44,3 @@ class _ReadStockGraph(Resource):
 
 
 api.add_resource(_ReadStockGraph, '/stock_graph/<string:stock_name>')
-
-
-# Tanay added code
-
-from flask import Flask, request, jsonify
-import pandas_datareader.data as web
-import pandas as pd
-import yfinance as yf
-
-app = Flask(__name)
-
-@app.route('/get_stock_data', methods=['POST'])
-def get_stock_data():
-    # Receive a list of ticker symbols from the front end
-    ticker_symbols = request.json.get('ticker_symbols', [])
-
-    all_data = {ticker: web.DataReader(ticker, 'stooq') for ticker in ticker_symbols}
-
-    # Extract the 'Adjusted Closing Price' for each symbol
-    price = pd.DataFrame({ticker: data['Close'] for ticker, data in all_data.items()})
-
-    # Convert the DataFrame to a JSON response
-    response = price.to_json(orient='split')
-    
-    return response
-
-if __name__ == '__main__':
-    app.run()
-
-import requests
-
-# Define the list of ticker symbols to fetch
-ticker_symbols = ['AAPL', 'NVDA', 'MSFT', 'TSLA', 'AMZN', 'NFLX', 'QCOM', 'SBUX']
-
-# Create a dictionary with the ticker symbols
-data = {'ticker_symbols': ticker_symbols}
-
-# Send a POST request to the backend
-response = requests.post('http://your-backend-url/get_stock_data', json=data)
-
-# Extract the JSON response
-stock_data = response.json()
-
-# Process or display the stock data as needed
-print(stock_data)
