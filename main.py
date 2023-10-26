@@ -1,3 +1,4 @@
+from flask_cors import CORS
 import threading
 
 # import "packages" from flask
@@ -35,15 +36,19 @@ app.register_blueprint(player_api)
 app.register_blueprint(app_projects)  # register app pages
 app.register_blueprint(stock_api)
 
+CORS(app, resources={r"/api/stocks/*": {"origins": "http://127.0.0.1:4200"}})
+
 
 @app.errorhandler(404)  # catch for URL not found
 def page_not_found(e):
     # note that we set the 404 status explicitly
     return render_template('404.html'), 404
 
+
 @app.route('/stock_graph/')
 def stock_graph():
     return render_template('stock_graph.html')
+
 
 @app.route('/')  # connects default URL to index() function
 def index():
@@ -53,7 +58,6 @@ def index():
 @app.route('/table/')  # connects /stub/ URL to stub() function
 def table():
     return render_template("table.html")
-
 
 
 @app.before_first_request

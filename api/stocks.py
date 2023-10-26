@@ -137,3 +137,66 @@ class _AnalyzeStock(Resource):
 
 api.add_resource(_AnalyzeStock, '/analyze/<string:stock_name>')
 
+
+class _CalculateOptimalWeights(Resource):
+    def post(self):
+        data = request.get_json()
+        stocks = data.get('stocks', [])
+
+        if len(stocks) < 2:
+            return jsonify({'error': 'At least 2 stocks are required to calculate optimal weighting.'}), 400
+
+        end_date = datetime.now()
+        start_date = end_date - pd.Timedelta(days=4856)
+
+        # log_ret datafframe for selected stocks
+        log_returns = {}
+        for stock_name in stocks:
+            df = yf.download(stock_name, start=start_date, end=end_date)
+            log_returns[stock_name] = np.log(
+                df['Adj Close'] / df['Adj Close'].shift(1))
+
+        log_ret = pd.DataFrame(log_returns)
+
+        # simulate portfolio optimization
+        num_ports = 6000
+        num_stocks = len(stocks)
+
+        all_weights = np.zeros((num_ports, num_stocks))
+        ret_arr = np.zeros(num_ports)
+        vol_arr = np.zeros(num_ports)
+        sharpe_arr = np.zeros(num_ports)
+
+        for x in range(num_ports):
+            # randomly generate weights
+            weights = np.array([random.random() for _ in range(num_stocks)])
+            weights /= np.sum(weights)
+            all_weights[x, :] = weights
+
+            # calculate expected return and volatility
+            ret_arr[x] = np.sum(log_ret.mean() * weights) * 252
+            vol_arr[x] = np.sqrt(
+                np.dot(weights.T, np.dot(log_ret.cov() * 252, weights)))
+
+            # calculate Sharpe ratio
+            sharpe_arr[x] = ret_arr[x] / vol_arr[x]
+
+        # find the portfolio with the maximum sharpe ratio
+        max_sharpe_idx = sharpe_arr.argmax()
+        max_sharpe_ret = ret_arr[max_sharpe_idx]
+        max_sharpe_vol = vol_arr[max_sharpe_idx]
+        max_sharpe_weights = all_weights[max_sharpe_idx, :]
+
+        response_data = {
+            'return': ret_arr.tolist(),
+            'volatility': vol_arr.tolist(),
+            'sharpe': sharpe_arr.tolist(),
+            'max_sharpe_ret': max_sharpe_ret,
+            'max_sharpe_vol': max_sharpe_vol,
+            'max_sharpe_weights': max_sharpe_weights.tolist(),
+        }
+
+        return jsonify(response_data)
+
+
+api.add_resource(_CalculateOptimalWeights, '/optimal_weights')
