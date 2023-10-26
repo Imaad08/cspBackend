@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+rom flask import Blueprint, jsonify, request
 import pandas as pd
 import yfinance as yf
 import plotly.graph_objs as go
@@ -78,3 +78,48 @@ class _GetLatestStockData(Resource):
 api.add_resource(_GetLatestStockData, '/latest_data/<string:stock_name>')
 
 api.add_resource(_ReadStockGraph, '/stock_graph/<string:stock_name>')
+
+
+def train_stock_prediction_model(stock_name):
+    end_date = datetime.now()
+    start_date = end_date - pd.Timedelta(days=4856)
+
+    df = yf.download(stock_name, start=start_date, end=end_date)
+
+    # preprocess the data
+    df['Close'] = df['Close'].pct_change()  # calc daily returns
+    df = df.dropna()
+
+    X = df[['Open', 'High', 'Low', 'Close']].values
+    y = (df['Close'] > 0).astype(int)  # 1 if price increaseds 0 if decreased
+
+    model = keras.Sequential([
+        layers.Dense(64, activation='relu', input_shape=(4,)),
+        layers.Dense(32, activation='relu'),
+        layers.Dense(1, activation='sigmoid')
+    ])
+    model.compile(optimizer='adam', loss='binary_crossentropy',
+                  metrics=['accuracy'])
+    model.fit(X, y, epochs=10)
+
+    return model
+
+
+def get_stock_recommendation(stock_name, model):
+    end_date = datetime.now()
+    start_date = end_date - pd.Timedelta(days=1)
+
+    df = yf.download(stock_name, start=start_date, end=end_date)
+
+    if df.empty:
+        return {'error': 'No data found for the provided stock ticker.'}, 404
+
+    df['Close'] = df['Close'].pct_change().iloc[-1]
+
+    X = df[['Open', 'High', 'Low', 'Close']].values
+    prediction = model.predict(X)
+
+    recommendation = 'Buy' if prediction > 0.5 else 'Don\'t Buy'
+    reason = f'This is based on the current data'
+
+    return {'recommendation': recommendation, 'reason': reason}
