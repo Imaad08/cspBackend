@@ -1,4 +1,4 @@
-rom flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request
 import pandas as pd
 import yfinance as yf
 import plotly.graph_objs as go
@@ -123,3 +123,17 @@ def get_stock_recommendation(stock_name, model):
     reason = f'This is based on the current data'
 
     return {'recommendation': recommendation, 'reason': reason}
+
+
+class _AnalyzeStock(Resource):
+    def get(self, stock_name):
+        try:
+            model = train_stock_prediction_model(stock_name)
+            recommendation = get_stock_recommendation(stock_name, model)
+            return jsonify(recommendation)
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+
+api.add_resource(_AnalyzeStock, '/analyze/<string:stock_name>')
+
