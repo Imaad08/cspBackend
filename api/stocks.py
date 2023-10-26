@@ -5,9 +5,16 @@ import plotly.graph_objs as go
 from datetime import datetime
 from flask_restful import Api, Resource
 import numpy as np
+from flask_cors import CORS
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+import random
 
 stock_api = Blueprint('stock_api', __name__, url_prefix='/api/stocks')
 api = Api(stock_api)
+
+CORS(stock_api)
 
 
 def get_stock_graph(stock_name):
@@ -37,40 +44,37 @@ def get_stock_graph(stock_name):
     return graph_data
 
 
-
 class _ReadStockGraph(Resource):
     def get(self, stock_name):
         graph = get_stock_graph(stock_name)
         return graph
 
-api.add_resource(_ReadStockGraph, '/stock_graph/<string:stock_name>')
 
-class _GetStockInfo(Resource):
+class _GetLatestStockData(Resource):
     def get(self, stock_name):
-        end_date = datetime.now()
-        start_date = end_date - pd.Timedelta(days=4856)
-        
-        df = yf.download(stock_name, start=start_date, end=end_date)
+        try:
 
-        stock_info = {
-            "symbol": stock_name,
-            "data": df.to_dict(),  
-        }
+            stock = yf.Ticker(stock_name)
+            latest_data = stock.history(period="1d")
 
-        return jsonify(stock_info)
+            if latest_data.empty:
+                return jsonify({'error': 'No data found for the provided stock ticker.'}), 404
 
-api.add_resource(_GetStockInfo, '/stock_info/<string:stock_name>')
+            latest_data = latest_data[['Open', 'High', 'Low', 'Close']]
+            latest_data = latest_data.rename(
+                columns={'Open': 'open', 'High': 'high', 'Low': 'low', 'Close': 'close'})
 
-class _UpdateStockData(Resource):
-    def put(self, stock_name):
-        data = request.get_json()  
-        
-        stock = yf.Ticker(stock_name)
-        history = stock.history(period="1d")  
-        updated_data = history.to_dict(orient='records')[0]
+            latest_data_dict = latest_data.to_dict(orient='records')[0]
 
-        response = {"message": "Stock data updated successfully", "updated_data": updated_data}
-        return jsonify(response)
+            for key, value in latest_data_dict.items():
+                if isinstance(value, (float, int)):
+                    latest_data_dict[key] = round(value, 2)
 
-api.add_resource(_UpdateStockData, '/update_stock/<string:stock_name>')
+            return jsonify(latest_data_dict)
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
 
+
+api.add_resource(_GetLatestStockData, '/latest_data/<string:stock_name>')
+
+api.add_resource(_ReadStockGraph, '/stock_graph/<string:stock_name>')
