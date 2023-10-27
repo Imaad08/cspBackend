@@ -8,6 +8,7 @@ import numpy as np
 from flask_cors import CORS
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
+import random
 
 stock_api = Blueprint('stock_api', __name__, url_prefix='/api/stocks')
 api = Api(stock_api)
