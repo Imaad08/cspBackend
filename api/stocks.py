@@ -6,10 +6,8 @@ from datetime import datetime
 from flask_restful import Api, Resource
 import numpy as np
 from flask_cors import CORS
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
-import random
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
 
 stock_api = Blueprint('stock_api', __name__, url_prefix='/api/stocks')
 api = Api(stock_api)
@@ -87,22 +85,23 @@ def train_stock_prediction_model(stock_name):
     df = yf.download(stock_name, start=start_date, end=end_date)
 
     # preprocess the data
-    df['Close'] = df['Close'].pct_change()  # calc daily returns
+    df['Close'] = df['Close'].pct_change()  # calculate daily returns
     df = df.dropna()
 
     X = df[['Open', 'High', 'Low', 'Close']].values
-    y = (df['Close'] > 0).astype(int)  # 1 if price increaseds 0 if decreased
+    y = (df['Close'] > 0).astype(int)  # 1 if price increase 0 if decreased
 
-    model = keras.Sequential([
-        layers.Dense(64, activation='relu', input_shape=(4,)),
-        layers.Dense(32, activation='relu'),
-        layers.Dense(1, activation='sigmoid')
-    ])
-    model.compile(optimizer='adam', loss='binary_crossentropy',
-                  metrics=['accuracy'])
-    model.fit(X, y, epochs=10)
+    # split the data into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42)
+
+    # create and train a DecisionTreeClassifier
+    model = DecisionTreeClassifier(random_state=42)
+    model.fit(X_train, y_train)
 
     return model
+
+# modify the get_stock_recommendation function
 
 
 def get_stock_recommendation(stock_name, model):
@@ -117,10 +116,15 @@ def get_stock_recommendation(stock_name, model):
     df['Close'] = df['Close'].pct_change().iloc[-1]
 
     X = df[['Open', 'High', 'Low', 'Close']].values
-    prediction = model.predict(X)
+    # reshape the input for prediction
+    prediction = model.predict(X.reshape(1, -1))
 
-    recommendation = 'Buy' if prediction > 0.5 else 'Don\'t Buy'
-    reason = f'This is based on the current data'
+    if prediction == 1:
+        recommendation = 'Buy'
+        reason = 'The model predicts a price increase based on historical data.'
+    else:
+        recommendation = 'Don\'t Buy'
+        reason = 'The model predicts a price decrease based on historical data.'
 
     return {'recommendation': recommendation, 'reason': reason}
 
