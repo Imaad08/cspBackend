@@ -173,7 +173,7 @@ class _CalculateOptimalWeights(Resource):
         sharpe_arr = np.zeros(num_ports)
 
         for x in range(num_ports):
-            # randomly generate weights
+            # randomly generate and iterate weights
             weights = np.array([random.random() for _ in range(num_stocks)])
             weights /= np.sum(weights)
             all_weights[x, :] = weights
