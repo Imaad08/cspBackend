@@ -191,6 +191,7 @@ class _CalculateOptimalWeights(Resource):
         max_sharpe_ret = ret_arr[max_sharpe_idx]
         max_sharpe_vol = vol_arr[max_sharpe_idx]
         max_sharpe_weights = all_weights[max_sharpe_idx, :]
+        max_sharpe = sharpe_arr[max_sharpe_idx]
 
         response_data = {
             'return': ret_arr.tolist(),
@@ -199,6 +200,7 @@ class _CalculateOptimalWeights(Resource):
             'max_sharpe_ret': max_sharpe_ret,
             'max_sharpe_vol': max_sharpe_vol,
             'max_sharpe_weights': max_sharpe_weights.tolist(),
+            'max_sharpe': max_sharpe,
         }
 
         return jsonify(response_data)
