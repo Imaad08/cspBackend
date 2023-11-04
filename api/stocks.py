@@ -122,10 +122,10 @@ def get_stock_recommendation(stock_name, model):
 
     if prediction == 1:
         recommendation = 'Buy'
-        reason = 'The model predicts a price increase based on historical data.'
+        reason = f'The model predicts a price increase based on historical data. The value of prediction is {prediction[0]}. This means there will most likely be an increase in price overall'
     else:
-        recommendation = 'Don\'t Buy'
-        reason = 'The model predicts a price decrease based on historical data.'
+        recommendation = 'Sell/Don\'t Buy'
+        reason = f'The model predicts a price decrease based on historical data. The value of prediction is {prediction[0]}. This means there will most likely be a decrease in price overall'
 
     return {'recommendation': recommendation, 'reason': reason}
 
