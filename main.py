@@ -72,4 +72,4 @@ if __name__ == "__main__":
     # change name for testing
     from flask_cors import CORS
     cors = CORS(app)
-    app.run(debug=True, host="0.0.0.0", port="8282")
+    app.run(debug=True, host="0.0.0.0", port="8765")
