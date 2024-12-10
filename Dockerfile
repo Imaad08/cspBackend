@@ -10,8 +10,8 @@ COPY . /
 RUN pip3 install --no-cache-dir -r requirements.txt
 RUN pip3 install gunicorn
 
-ENV GUNICORN_CMD_ARGS="--workers=3 --bind=0.0.0.0:8080"
+ENV GUNICORN_CMD_ARGS="--workers=3 --bind=0.0.0.0:8765"
 
-EXPOSE 8080
+EXPOSE 8765
 
 CMD [ "gunicorn", "main:app" ] 
