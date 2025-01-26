@@ -9,6 +9,8 @@ from flask_cors import CORS
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 import random
+from flask import make_response
+
 
 stock_api = Blueprint('stock_api', __name__, url_prefix='/api/stocks')
 api = Api(stock_api)
@@ -207,3 +209,27 @@ class _CalculateOptimalWeights(Resource):
 
 
 api.add_resource(_CalculateOptimalWeights, '/optimal_weights')
+
+
+class _GetStockPriceFiveYearsAgo(Resource):
+    def get(self, stock_name):
+        try:
+            end_date = datetime.now()
+            start_date = end_date - pd.Timedelta(days=5 * 365)
+
+            # Fetch data over a wider range to avoid missing data
+            df = yf.download(stock_name, start=start_date, end=start_date + pd.Timedelta(days=10))
+
+            if df.empty:
+                return make_response(jsonify({'error': 'No data found for the provided stock ticker.'}), 404)
+
+            # Get the first available closing price
+            price_five_years_ago = float(df['Close'].iloc[0])  # Convert to a JSON-serializable scalar
+
+            return jsonify({'stock_name': stock_name, 'price_five_years_ago': round(price_five_years_ago, 2)})
+        except Exception as e:
+            return make_response(jsonify({'error': str(e)}), 500)
+
+
+
+api.add_resource(_GetStockPriceFiveYearsAgo, '/price_five_years_ago/<string:stock_name>')
